@@ -10,7 +10,6 @@ export { BaseSmartContractAccount } from "./account/base.js";
 export { SimpleSmartContractAccount } from "./account/simple.js";
 export type { SimpleSmartAccountParams } from "./account/simple.js";
 export type * from "./account/types.js";
-export type { BaseSmartAccountParams } from "./account/types.js";
 export { LocalAccountSigner } from "./signer/local-account.js";
 export type { SmartAccountSigner } from "./signer/types.js";
 export {
@@ -33,6 +32,7 @@ export {
 } from "./ens/utils.js";
 
 export { SmartAccountProvider, noOpMiddleware } from "./provider/base.js";
+export { SmartAccountProviderConfigSchema } from "./provider/schema.js";
 export type * from "./provider/types.js";
 
 export type * from "./types.js";
