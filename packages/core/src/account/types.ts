@@ -5,13 +5,20 @@ import type { z } from "zod";
 import type { SupportedTransports } from "../client/types";
 import type { SmartAccountSigner } from "../signer/types";
 import type { BatchUserOperationCallData } from "../types";
-import type { BaseSmartAccountParamsSchema } from "./schema";
+import type {
+  BaseSmartAccountParamsSchema,
+  SimpleSmartAccountParamsSchema,
+} from "./schema";
 
 export type SignTypedDataParams = Omit<SignTypedDataParameters, "privateKey">;
 
 export type BaseSmartAccountParams<
   TTransport extends SupportedTransports = Transport
 > = z.infer<ReturnType<typeof BaseSmartAccountParamsSchema<TTransport>>>;
+
+export type SimpleSmartAccountParams<
+  TTransport extends SupportedTransports = Transport
+> = z.infer<ReturnType<typeof SimpleSmartAccountParamsSchema<TTransport>>>;
 
 export interface ISmartContractAccount {
   /**

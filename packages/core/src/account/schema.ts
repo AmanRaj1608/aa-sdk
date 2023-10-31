@@ -56,3 +56,21 @@ export const BaseSmartAccountParamsSchema = <
     }),
     accountAddress: zAddress.optional(),
   });
+
+export const SimpleSmartAccountParamsSchema = <
+  TTransport extends SupportedTransports = Transport
+>() =>
+  BaseSmartAccountParamsSchema<TTransport>().extend({
+    owner: z
+      .any()
+      .refine<SmartAccountSigner>((signer): signer is SmartAccountSigner => {
+        return (
+          typeof signer === "object" &&
+          "signerType" in signer &&
+          "signMessage" in signer &&
+          "signTypedData" in signer &&
+          "getAddress" in signer
+        );
+      }),
+    index: z.bigint().optional(),
+  });
