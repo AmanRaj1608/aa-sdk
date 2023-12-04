@@ -17,7 +17,7 @@ import {
 } from "../src/index.js";
 import { SmartAccountProvider } from "../src/provider/base.js";
 import { LocalAccountSigner } from "../src/signer/local-account.js";
-import { MUMBAI_RPC_URL, OWNER_MNEMONIC } from "./constants.js";
+import { API_KEY, OWNER_MNEMONIC } from "./constants.js";
 
 const chain = polygonMumbai;
 
@@ -163,8 +163,9 @@ const givenConnectedProvider = ({
   feeOptions?: UserOperationFeeOptions;
 }) => {
   const provider = new SmartAccountProvider({
-    rpcProvider: MUMBAI_RPC_URL,
+    rpcProvider: `${chain.rpcUrls.alchemy.http[0]}/${API_KEY}`,
     chain,
+    opts: { feeOptions },
   });
   const feeDataGetter = async () => ({
     maxFeePerGas: 100_000_000_000n,

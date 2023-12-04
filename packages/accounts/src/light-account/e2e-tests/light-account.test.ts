@@ -1,42 +1,108 @@
-import type { UserOperationOverrides } from "@alchemy/aa-core";
 import {
+  LocalAccountSigner,
+  Logger,
+  LogLevel,
   type SmartAccountSigner,
   type UserOperationFeeOptions,
 } from "@alchemy/aa-core";
-import { Alchemy, Network } from "alchemy-sdk";
-import { toHex, type Address, type Chain, type Hash } from "viem";
-import { mnemonicToAccount } from "viem/accounts";
+import {
+  isAddress,
+  toHex,
+  type Address,
+  type Chain,
+  type Hash,
+  type HDAccount,
+} from "viem";
+import { generatePrivateKey } from "viem/accounts";
 import { sepolia } from "viem/chains";
-import { createLightAccountAlchemyProvider } from "../src/index.js";
+import {
+  createLightAccountProvider,
+  LightSmartContractAccount,
+} from "../../index.js";
 import {
   API_KEY,
   LIGHT_ACCOUNT_OWNER_MNEMONIC,
-  PAYMASTER_POLICY_ID,
+  UNDEPLOYED_OWNER_MNEMONIC,
 } from "./constants.js";
 
 const chain = sepolia;
-const network = Network.ETH_SEPOLIA;
+
+Logger.setLogLevel(LogLevel.DEBUG);
 
 describe("Light Account Tests", () => {
-  const ownerAccount = mnemonicToAccount(LIGHT_ACCOUNT_OWNER_MNEMONIC);
-  const owner: SmartAccountSigner = {
-    inner: ownerAccount,
-    signMessage: async (msg) =>
-      ownerAccount.signMessage({
-        message: { raw: toHex(msg) },
-      }),
-    signTypedData: async () => "0xHash",
-    getAddress: async () => ownerAccount.address,
-    signerType: "aa-sdk-tests",
-  };
+  const owner: SmartAccountSigner<HDAccount> =
+    LocalAccountSigner.mnemonicToAccountSigner(LIGHT_ACCOUNT_OWNER_MNEMONIC);
+  const undeployedOwner = LocalAccountSigner.mnemonicToAccountSigner(
+    UNDEPLOYED_OWNER_MNEMONIC
+  );
 
   it("should successfully get counterfactual address", async () => {
     const provider = givenConnectedProvider({ owner, chain });
     expect(await provider.getAddress()).toMatchInlineSnapshot(
-      `"0x1a3a89cd46f124EF40848966c2D7074a575dbC27"`
+      '"0x1a3a89cd46f124EF40848966c2D7074a575dbC27"'
     );
   });
 
+  it("should sign typed data successfully", async () => {
+    const provider = givenConnectedProvider({ owner, chain });
+    const typedData = {
+      types: {
+        Request: [{ name: "hello", type: "string" }],
+      },
+      primaryType: "Request",
+      message: {
+        hello: "world",
+      },
+    };
+    expect(await provider.signTypedData(typedData)).toBe(
+      await owner.signTypedData(typedData)
+    );
+  });
+
+  it("should sign message successfully", async () => {
+    const provider = givenConnectedProvider({ owner, chain });
+    expect(await provider.signMessage("test")).toBe(
+      await owner.signMessage("test")
+    );
+  });
+
+  it("should sign typed data with 6492 successfully for undeployed account", async () => {
+    const undeployedProvider = givenConnectedProvider({
+      owner: undeployedOwner,
+      chain,
+    });
+    const typedData = {
+      types: {
+        Request: [{ name: "hello", type: "string" }],
+      },
+      primaryType: "Request",
+      message: {
+        hello: "world",
+      },
+    };
+    expect(
+      await undeployedProvider.signTypedDataWith6492(typedData)
+    ).toMatchInlineSnapshot(
+      '"0x00000000000000000000000000000055c0b4fa41dde26a74435ff03692292fbd000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000445fbfb9cf000000000000000000000000ef9d7530d16df66481adf291dc9a12b44c7f7df00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041591a9422219a5f2bc87ee24a82a6d5ef9674bf7408a2a289984de258466d148e75efb65b487ffbfcb061b268b1b667d8d7d4eac2c3d9d2d0a52d49c891be567c1c000000000000000000000000000000000000000000000000000000000000006492649264926492649264926492649264926492649264926492649264926492"'
+    );
+  });
+
+  it("should sign message with 6492 successfully for undeployed account", async () => {
+    const undeployedProvider = givenConnectedProvider({
+      owner: undeployedOwner,
+      chain,
+    });
+    expect(
+      await undeployedProvider.signMessageWith6492("test")
+    ).toMatchInlineSnapshot(
+      '"0x00000000000000000000000000000055c0b4fa41dde26a74435ff03692292fbd000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000445fbfb9cf000000000000000000000000ef9d7530d16df66481adf291dc9a12b44c7f7df00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041be34ecce63c5248d5cda407e7da319be3c861e6e2c5d30c9630cd35dcb55e56205c482503552883923f79e751ea3671cbb84d65b18af33cd3034aeb7d529da9a1b000000000000000000000000000000000000000000000000000000000000006492649264926492649264926492649264926492649264926492649264926492"'
+    );
+  });
+
+  /**
+   * Need to add test eth to the counterfactual address for this test to pass.
+   * For current balance, @see: https://sepolia.etherscan.io/address/0x7eDdc16B15259E5541aCfdebC46929873839B872
+   */
   it("should execute successfully", async () => {
     const provider = givenConnectedProvider({ owner, chain });
     const result = await provider.sendUserOperation({
@@ -52,221 +118,82 @@ describe("Light Account Tests", () => {
 
   it("should fail to execute if account address is not deployed and not correct", async () => {
     const accountAddress = "0xc33AbD9621834CA7c6Fc9f9CC3c47b9c17B03f9F";
-    const provider = givenConnectedProvider({ owner, chain, accountAddress });
+    const newProvider = givenConnectedProvider({
+      owner,
+      chain,
+      accountAddress,
+    });
 
-    const result = provider.sendUserOperation({
-      target: await provider.getAddress(),
+    const result = newProvider.sendUserOperation({
+      target: await newProvider.getAddress(),
       data: "0x",
     });
 
     await expect(result).rejects.toThrowError();
   });
 
-  it("should successfully execute with alchemy paymaster info", async () => {
+  it("should get counterfactual for undeployed account", async () => {
+    const owner = LocalAccountSigner.privateKeyToAccountSigner(
+      generatePrivateKey()
+    );
+    const provider = givenConnectedProvider({ owner, chain });
+
+    const address = provider.getAddress();
+    await expect(address).resolves.not.toThrowError();
+    expect(isAddress(await address)).toBe(true);
+  });
+
+  it("should get owner successfully", async () => {
+    const provider = givenConnectedProvider({ owner, chain });
+    expect(await provider.account.getOwnerAddress()).toMatchInlineSnapshot(
+      '"0x65eaA2AfDF6c97295bA44C458abb00FebFB3a5FA"'
+    );
+    expect(await provider.account.getOwnerAddress()).toBe(
+      await owner.getAddress()
+    );
+  });
+
+  it("should transfer ownership successfully", async () => {
     const provider = givenConnectedProvider({
       owner,
       chain,
-    }).withAlchemyGasManager({
-      policyId: PAYMASTER_POLICY_ID,
     });
 
-    const result = await provider.sendUserOperation({
-      target: await provider.getAddress(),
+    // create a throwaway address
+    const throwawayOwner = LocalAccountSigner.privateKeyToAccountSigner(
+      generatePrivateKey()
+    );
+    const throwawayProvider = givenConnectedProvider({
+      owner: throwawayOwner,
+      chain,
+    });
+
+    const oldOwner = await throwawayOwner.getAddress();
+
+    // fund the throwaway address
+    await provider.sendTransaction({
+      from: await provider.getAddress(),
+      to: await throwawayProvider.getAddress(),
       data: "0x",
+      value: toHex(1000000000000000n),
     });
-    const txnHash = provider.waitForUserOperationTransaction(
-      result.hash as Hash
+
+    // create new owner and transfer ownership
+    const newThrowawayOwner = LocalAccountSigner.privateKeyToAccountSigner(
+      generatePrivateKey()
+    );
+    await LightSmartContractAccount.transferOwnership(
+      throwawayProvider,
+      newThrowawayOwner,
+      true
     );
 
-    await expect(txnHash).resolves.not.toThrowError();
-  }, 100000);
+    const newOwnerViaProvider =
+      await throwawayProvider.account.getOwnerAddress();
+    const newOwner = await newThrowawayOwner.getAddress();
 
-  it("should successfully override fees in alchemy paymaster", async () => {
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-      feeOptions: { maxFeePerGas: undefined, maxPriorityFeePerGas: undefined },
-    })
-      .withAlchemyGasManager({
-        policyId: PAYMASTER_POLICY_ID,
-      })
-      .withFeeDataGetter(async () => ({
-        maxFeePerGas: 1n,
-        maxPriorityFeePerGas: 1n,
-      }));
-
-    // this should fail since we set super low fees
-    await expect(
-      async () =>
-        await provider.sendUserOperation({
-          target: await provider.getAddress(),
-          data: "0x",
-        })
-    ).rejects.toThrow();
-  }, 100000);
-
-  it("should support overrides for buildUserOperation", async () => {
-    const signer = givenConnectedProvider({
-      owner,
-      chain,
-    }).withAlchemyGasManager({
-      policyId: PAYMASTER_POLICY_ID,
-    });
-
-    const overrides: UserOperationOverrides = {
-      maxFeePerGas: 100000000n,
-      maxPriorityFeePerGas: 100000000n,
-      paymasterAndData: "0x",
-    };
-
-    const uoStruct = await signer.buildUserOperation(
-      {
-        target: await signer.getAddress(),
-        data: "0x",
-      },
-      overrides
-    );
-
-    expect(uoStruct.maxFeePerGas).toEqual(overrides.maxFeePerGas);
-    expect(uoStruct.maxPriorityFeePerGas).toEqual(
-      overrides.maxPriorityFeePerGas
-    );
-    expect(uoStruct.paymasterAndData).toEqual(overrides.paymasterAndData);
-  }, 100000);
-
-  it("should successfully use paymaster with fee opts", async () => {
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-      feeOptions: {
-        maxFeePerGas: { percentage: 50 },
-        maxPriorityFeePerGas: { percentage: 50 },
-        preVerificationGas: { percentage: 50 },
-      },
-    });
-
-    const result = await provider.sendUserOperation({
-      target: await provider.getAddress(),
-      data: "0x",
-    });
-    const txnHash = provider.waitForUserOperationTransaction(
-      result.hash as Hash
-    );
-
-    await expect(txnHash).resolves.not.toThrowError();
-  }, 100000);
-
-  it("should execute successfully via drop and replace", async () => {
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-    });
-
-    const result = await provider.sendUserOperation({
-      target: await provider.getAddress(),
-      data: "0x",
-    });
-    const replacedResult = await provider.dropAndReplaceUserOperation(
-      result.request
-    );
-
-    const txnHash = provider.waitForUserOperationTransaction(
-      replacedResult.hash
-    );
-    await expect(txnHash).resolves.not.toThrowError();
-  }, 100000);
-
-  it("should execute successfully via drop and replace when using paymaster", async () => {
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-    }).withAlchemyGasManager({
-      policyId: PAYMASTER_POLICY_ID,
-    });
-
-    const result = await provider.sendUserOperation({
-      target: await provider.getAddress(),
-      data: "0x",
-    });
-    const replacedResult = await provider.dropAndReplaceUserOperation(
-      result.request
-    );
-
-    const txnHash = provider.waitForUserOperationTransaction(
-      replacedResult.hash
-    );
-    await expect(txnHash).resolves.not.toThrowError();
-  }, 100000);
-
-  it("should get token balances for the smart account", async () => {
-    const alchemy = new Alchemy({
-      apiKey: API_KEY!,
-      network,
-    });
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-    })
-      .withAlchemyGasManager({
-        policyId: PAYMASTER_POLICY_ID,
-      })
-      .withAlchemyEnhancedApis(alchemy);
-
-    const address = await provider.getAddress();
-    const balances = await provider.core.getTokenBalances(address);
-    expect(balances.tokenBalances.length).toMatchInlineSnapshot("1");
-  }, 50000);
-
-  it("should get owned nfts for the smart account", async () => {
-    const alchemy = new Alchemy({
-      apiKey: API_KEY!,
-      network,
-    });
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-    })
-      .withAlchemyGasManager({
-        policyId: PAYMASTER_POLICY_ID,
-      })
-      .withAlchemyEnhancedApis(alchemy);
-
-    const address = await provider.getAddress();
-    const nfts = await provider.nft.getNftsForOwner(address);
-    expect(nfts.ownedNfts).toMatchInlineSnapshot("[]");
-  }, 100000);
-
-  it("should correctly simulate asset changes for the user operation", async () => {
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-    });
-
-    const simulatedAssetChanges =
-      await provider.simulateUserOperationAssetChanges({
-        target: provider.getEntryPointAddress(),
-        data: "0x",
-        value: 1n,
-      });
-
-    expect(simulatedAssetChanges.changes.length).toMatchInlineSnapshot("2");
-  }, 50000);
-
-  it("should simulate as part of middleware stack when added to provider", async () => {
-    const provider = givenConnectedProvider({
-      owner,
-      chain,
-    }).withAlchemyUserOpSimulation();
-
-    const spy = vi.spyOn(provider, "simulateUOMiddleware");
-
-    await provider.buildUserOperation({
-      target: provider.getEntryPointAddress(),
-      data: "0x",
-      value: 1n,
-    });
-
-    expect(spy).toHaveBeenCalledOnce();
+    expect(newOwnerViaProvider).not.toBe(oldOwner);
+    expect(newOwnerViaProvider).toBe(newOwner);
   }, 100000);
 });
 
@@ -280,18 +207,17 @@ const givenConnectedProvider = ({
   chain: Chain;
   accountAddress?: Address;
   feeOptions?: UserOperationFeeOptions;
-}) =>
-  createLightAccountAlchemyProvider({
-    apiKey: API_KEY!,
+}) => {
+  const provider = createLightAccountProvider({
+    rpcProvider: `${chain.rpcUrls.alchemy.http[0]}/${API_KEY!}`,
     chain,
     owner,
-    opts: {
-      txMaxRetries: 10,
-      feeOptions: {
-        ...feeOptions,
-        maxFeePerGas: { percentage: 50 },
-        maxPriorityFeePerGas: { percentage: 50 },
-      },
-    },
     accountAddress,
+    opts: {
+      feeOptions,
+      txMaxRetries: 100,
+    },
   });
+
+  return provider;
+};

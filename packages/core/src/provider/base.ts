@@ -10,7 +10,6 @@ import {
   type Transaction,
   type Transport,
 } from "viem";
-import { arbitrum, arbitrumGoerli, arbitrumSepolia } from "viem/chains";
 import type {
   ISmartContractAccount,
   SignTypedDataParams,
@@ -65,12 +64,6 @@ export const noOpMiddleware: AccountMiddlewareFn = async (
   _overrides?: UserOperationOverrides,
   _feeOptions?: UserOperationFeeOptions
 ) => struct;
-
-const minPriorityFeePerBidDefaults = new Map<number, bigint>([
-  [arbitrum.id, 10_000_000n],
-  [arbitrumGoerli.id, 10_000_000n],
-  [arbitrumSepolia.id, 10_000_000n],
-]);
 
 export class SmartAccountProvider<
     TTransport extends SupportedTransports = Transport
@@ -556,22 +549,33 @@ export class SmartAccountProvider<
     return struct;
   };
 
-  readonly feeDataGetter: AccountMiddlewareFn = async (struct) => {
-    const [maxPriorityFeePerGas, feeData] = await Promise.all([
-      this.rpcClient.estimateMaxPriorityFeePerGas(),
-      this.rpcClient.estimateFeesPerGas(),
-    ]);
+  readonly feeDataGetter: AccountMiddlewareFn = async (
+    struct,
+    overrides,
+    feeOptions
+  ) => {
+    // maxFeePerGas must be at least the sum of maxPriorityFeePerGas and baseFee
+    // so we need to accommodate for the fee option applied maxPriorityFeePerGas for the maxFeePerGas
+    //
+    // Note that if maxFeePerGas is not at least the sum of maxPriorityFeePerGas and required baseFee
+    // after applying the fee options, then the transaction will fail
+    //
+    // Refer to https://docs.alchemy.com/docs/maxpriorityfeepergas-vs-maxfeepergas
+    // for more information about maxFeePerGas and maxPriorityFeePerGas
+
+    const feeData = await this.rpcClient.estimateFeesPerGas();
     if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
       throw new Error(
         "feeData is missing maxFeePerGas or maxPriorityFeePerGas"
       );
     }
 
-    // set maxPriorityFeePerGasBid to the max between 33% added priority fee estimate and
-    // the min priority fee per gas set for the provider
-    const maxPriorityFeePerGasBid = bigIntMax(
-      bigIntPercent(maxPriorityFeePerGas, 133n),
-      this.minPriorityFeePerBid
+    let maxPriorityFeePerGas: BigNumberish =
+      await this.rpcClient.estimateMaxPriorityFeePerGas();
+    maxPriorityFeePerGas = applyUserOpOverrideOrFeeOption(
+      maxPriorityFeePerGas,
+      overrides?.maxPriorityFeePerGas,
+      feeOptions?.maxPriorityFeePerGas
     );
 
     let maxFeePerGas: BigNumberish =

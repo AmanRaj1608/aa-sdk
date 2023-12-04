@@ -17,32 +17,6 @@
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.10.0.tgz#d2a39395c587e092d77cbbc80acf956a54f38bf7"
   integrity sha512-nA9XHtlAkYfJxY7bce8DcN7eKxWWCWkU+1GR9d+U6MbNpfwQp8TI7vqOsBsMcHoT4mBu2kypKoSKnghEzOOq5Q==
 
-"@alchemy/aa-accounts@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@alchemy/aa-accounts/-/aa-accounts-0.2.0.tgz#e27cc74b9ff5ddde72613636dd88dae33e2d208f"
-  integrity sha512-QszM3DYMpMTKe30b42tD/oLp/paPJkQj5OVJ4X2WN5Ed40CEDZrRhzRvHzxHmQ72lqpn7LqBf24vWsTUupA8oA==
-  dependencies:
-    "@alchemy/aa-core" "^0.2.0"
-    viem "^1.16.2"
-
-"@alchemy/aa-alchemy@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@alchemy/aa-alchemy/-/aa-alchemy-0.2.0.tgz#ea11d4bb3f9c4bb515b72f29e3099199f20ad634"
-  integrity sha512-5UvzqWY06VCkG45GiygbK9bkT1qGBb4DQs3/AV1ymp5xN9FJRpSsJn6voy8vedseDeUeXmjNmTRp5hYNVTK0dA==
-  dependencies:
-    "@alchemy/aa-core" "^0.2.0"
-    viem "^1.16.2"
-
-"@alchemy/aa-core@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@alchemy/aa-core/-/aa-core-0.2.0.tgz#ede9d2b107fd6c55c71eca9f03d6c22e4530a300"
-  integrity sha512-qBkY3qFAbWGfqhghyv6kRw+wGsVOtlBjsoSOG24bW3fp/I5TiUZlQrOIKnJiZOj+QW2EuBCu6Kwj10OA/jzKig==
-  dependencies:
-    abitype "^0.8.3"
-    eventemitter3 "^5.0.1"
-    viem "^1.16.2"
-    zod "^3.22.4"
-
 "@algolia/autocomplete-core@1.9.3":
   version "1.9.3"
   resolved "https://registry.yarnpkg.com/@algolia/autocomplete-core/-/autocomplete-core-1.9.3.tgz#1d56482a768c33aae0868c8533049e02e8961be7"
