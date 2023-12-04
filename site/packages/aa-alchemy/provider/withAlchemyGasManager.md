@@ -10,11 +10,13 @@ head:
   - - meta
     - property: og:description
       content: Overview of the withAlchemyGasManager method on Alchemy Provider in aa-alchemy
+next:
+  text: Middleware
 ---
 
 # withAlchemyGasManager
 
-`withAlchemyGasManager` is a method on `AlchemyProvider` that you can optionally call to create a new provider instance with added middleware leveraging the Alchemy Gas Manager (an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) Paymaster). Under the hood, this will call the [`withAlchemyGasManager`](/packages/aa-alchemy/middleware/withAlchemyGasManager.ts).
+`withAlchemyGasManager` is a method on `AlchemyProvider` that you can optionally call to create a new provider instance with added middleware leveraging the Alchemy Gas Manager (an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) Paymaster). Under the hood, this will call the [`withAlchemyGasManager`](/packages/aa-alchemy/middleware/withAlchemyGasManager) middleware.
 
 ## Usage
 
@@ -24,7 +26,7 @@ head:
 import { provider } from "./provider";
 // [!code focus:99]
 
-// use Alchemy Gas Manager to sponsorship transactions
+// use Gas Manager to sponsorship transactions
 const providerWithGasManager = provider.withAlchemyGasManager({
   policyId: PAYMASTER_POLICY_ID,
 });
@@ -43,4 +45,4 @@ A new instance of an `AlchemyProvider` with the same attributes as the input, no
 
 ### `config: AlchemyGasManagerConfig`
 
-- `policyId: string` -- the Alchemy Gas Manager policy ID
+- `policyId: string` -- the Gas Manager policy ID

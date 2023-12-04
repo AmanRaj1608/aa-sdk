@@ -3,6 +3,11 @@ import {
   type UserOperationRequest,
 } from "@alchemy/aa-core";
 import type { Address, Hex } from "viem";
+import type {
+  RequestGasAndPaymasterAndDataOverrides,
+  SimulateUserOperationAssetChangesRequest,
+  SimulateUserOperationAssetChangesResponse,
+} from "./types/index.js";
 
 export type ClientWithAlchemyMethods = PublicErc4337Client & {
   request: PublicErc4337Client["request"] &
@@ -26,10 +31,7 @@ export type ClientWithAlchemyMethods = PublicErc4337Client & {
             entryPoint: Address;
             userOperation: UserOperationRequest;
             dummySignature: Hex;
-            feeOverride?: {
-              maxFeePerGas: Hex;
-              maxPriorityFeePerGas: Hex;
-            };
+            overrides?: RequestGasAndPaymasterAndDataOverrides;
           }
         ];
       }): Promise<{
@@ -40,6 +42,11 @@ export type ClientWithAlchemyMethods = PublicErc4337Client & {
         maxFeePerGas: Hex;
         maxPriorityFeePerGas: Hex;
       }>;
+
+      request(args: {
+        method: "alchemy_simulateUserOperationAssetChanges";
+        params: SimulateUserOperationAssetChangesRequest;
+      }): Promise<SimulateUserOperationAssetChangesResponse>;
 
       request(args: {
         method: "rundler_maxPriorityFeePerGas";

@@ -10,7 +10,7 @@ export default defineConfig({
     logo: "/kit-logo.svg",
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: "Docs", link: "/getting-started" },
+      { text: "Docs", link: "/overview/getting-started" },
       {
         text: "Examples",
         link: "https://github.com/alchemyplatform/aa-sdk/tree/main/examples",
@@ -42,10 +42,11 @@ export default defineConfig({
     sidebar: [
       {
         text: "Overview",
+        base: "/overview",
         items: [
           { text: "Why Account Kit", link: "/why-account-kit" },
           { text: "Introduction", link: "/introduction" },
-          { text: "Getting Started Guide", link: "/getting-started" },
+          { text: "Getting Started", link: "/getting-started" },
           {
             text: "Packages Overview",
             link: "/package-overview",
@@ -57,6 +58,59 @@ export default defineConfig({
         ],
       },
       {
+        text: "Smart Accounts",
+        base: "/smart-accounts",
+        items: [
+          { text: "Overview", link: "/overview" },
+          {
+            text: "Choosing a Smart Account",
+            base: "/smart-accounts/accounts",
+            items: [
+              { text: "Introduction", link: "/choosing-a-smart-account" },
+              { text: "Light Account", link: "/light-account" },
+              {
+                text: "Modular Account",
+                link: "/modular-account",
+              },
+              {
+                text: "Deployments",
+                link: "/deployment-addresses",
+              },
+              { text: "Using Your Own", link: "/using-your-own" },
+            ],
+          },
+          {
+            text: "Choosing a Signer",
+            base: "/smart-accounts/signers",
+            items: [
+              {
+                text: "Introduction",
+                link: "/choosing-a-signer",
+              },
+              { text: "Magic", link: "/magic" },
+              { text: "Web3Auth", link: "/web3auth" },
+              { text: "Turnkey", link: "/turnkey" },
+              { text: "Privy", link: "/privy" },
+              { text: "Dynamic", link: "/dynamic" },
+              { text: "Fireblocks", link: "/fireblocks" },
+              { text: "Portal", link: "/portal" },
+              { text: "Capsule", link: "/capsule" },
+              { text: "Lit Protocol", link: "/lit" },
+              {
+                text: "Particle Network",
+                link: "/particle-network",
+              },
+              { text: "Externally Owned Account (EOA)", link: "/eoa" },
+              {
+                text: "Using Your Own",
+                link: "/custom-signer",
+              },
+              { text: "Contributing Your Signer", link: "/contributing" },
+            ],
+          },
+        ],
+      },
+      {
         text: "Guides",
         base: "/guides",
         items: [
@@ -64,67 +118,43 @@ export default defineConfig({
             text: "How to Send a User Operation",
             link: "/send-user-operation",
           },
-        ],
-      },
-      {
-        text: "Choosing a Smart Account",
-        base: "/smart-accounts",
-        items: [
-          { text: "Overview", link: "/overview" },
           {
-            text: "Choosing a Smart Account",
-            base: "/smart-accounts/accounts",
-            collapsed: true,
+            text: "Gas Sponsorship",
+            base: "/guides/sponsoring-gas",
             items: [
               {
-                text: "Overview",
-                link: "/choosing-a-smart-account",
+                text: "How to Sponsor Gas for User Operations",
+                link: "/sponsoring-gas",
               },
-              { text: "Light Account Smart Contract", link: "/light-account" },
               {
-                text: "Modular Account Smart Contract",
-                link: "/modular-account",
-              },
-              { text: "Using Your Own Smart Account", link: "/using-your-own" },
-              {
-                text: "Deployment Addresses",
-                link: "/deployment-addresses",
+                text: "How to Handle User Operations that are Not Eligible for Gas Sponsorship",
+                link: "/gas-sponsorship-eligibility",
               },
             ],
           },
+          { text: "How to Batch Transactions", link: "/batching-transactions" },
           {
-            text: "Choosing a Signer",
-            base: "/smart-accounts/signers",
-            collapsed: true,
+            text: "How to Transfer Ownership of a Smart Account",
+            link: "/transferring-ownership",
+          },
+          {
+            text: "How to Simulate a User Operation",
+            link: "/sim-user-operation",
+          },
+          {
+            text: "Smart Account Data",
+            base: "/guides/enhanced-apis",
             items: [
               {
-                text: "Overview",
-                link: "/choosing-a-signer",
+                text: "How to Fetch a Smart Account's NFTs",
+                link: "/nft",
               },
-              { text: "Magic Link", link: "/magic" },
-              { text: "Web3Auth", link: "/web3auth" },
-              { text: "Turnkey", link: "/turnkey" },
-              { text: "Privy", link: "/privy" },
-              { text: "Dynamic", link: "/dynamic" },
-              { text: "Fireblocks", link: "/fireblocks" },
-              { text: "Portal Integration Guide", link: "/portal" },
-              { text: "Capsule Integration Guide", link: "/capsule" },
-              { text: "Lit Protocol Integration Guide", link: "/lit" },
               {
-                text: "Particle Network Integration Guide",
-                link: "/particle-network",
+                text: "How to Fetch a Smart Account's ERC-20 Tokens",
+                link: "/token",
               },
-              { text: "EOA Integration Guide", link: "/eoa" },
-              {
-                text: "How to Use Your Own Account Signer",
-                link: "/custom-signer",
-              },
-              { text: "Contributing Your Signer", link: "/contributing" },
             ],
           },
-          { text: "Sponsoring Gas", link: "/sponsoring-gas" },
-          { text: "Batching Transactions", link: "/batching-transactions" },
-          { text: "Transferring Ownership", link: "/transferring-ownership" },
         ],
       },
       {
@@ -133,7 +163,7 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
-            text: "Overview of aa-core",
+            text: "Getting Started",
             link: "/",
           },
           {
@@ -142,11 +172,11 @@ export default defineConfig({
             base: "/packages/aa-core/provider",
             items: [
               {
-                text: "Overview of SmartAccountProvider",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
-                text: "constructor for SmartAccountProvider",
+                text: "constructor",
                 link: "/constructor",
               },
               {
@@ -156,6 +186,10 @@ export default defineConfig({
               {
                 text: "buildUserOperation",
                 link: "/buildUserOperation",
+              },
+              {
+                text: "checkGasSponsorshipEligibility",
+                link: "/checkGasSponsorshipEligibility",
               },
               {
                 text: "buildUserOperationFromTx",
@@ -230,6 +264,10 @@ export default defineConfig({
                 link: "/withCustomMiddleware",
               },
               {
+                text: "withUOSimulationMiddleware",
+                link: "/withUOSimulationMiddleware",
+              },
+              {
                 text: "connect",
                 link: "/connect",
               },
@@ -249,11 +287,11 @@ export default defineConfig({
             collapsed: true,
             items: [
               {
-                text: "Overview of ISmartContractAccount",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
-                text: "constructor for SimpleSmartContractAccount",
+                text: "constructor",
                 link: "/constructor",
               },
               {
@@ -369,7 +407,7 @@ export default defineConfig({
             collapsed: true,
             items: [
               {
-                text: "Overview of Public Client",
+                text: "Introduction",
                 link: "/",
               },
               {
@@ -414,7 +452,26 @@ export default defineConfig({
             ],
           },
           {
-            text: "Utilities",
+            text: "Types",
+            base: "/packages/aa-core/types",
+            collapsed: true,
+            items: [
+              {
+                text: "UserOperationFeeOptions",
+                link: "/UserOperationFeeOptions",
+              },
+              {
+                text: "UserOperationFeeOptionsField",
+                link: "/userOperationFeeOptionsField",
+              },
+              {
+                text: "UserOperationOverrides",
+                link: "/userOperationOverrides",
+              },
+            ],
+          },
+          {
+            text: "Utils",
             base: "/packages/aa-core/utils",
             collapsed: true,
             items: [
@@ -457,26 +514,42 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
-            text: "Overview of aa-alchemy",
+            text: "Getting Started",
             link: "/",
           },
           {
-            text: "AlchemyProvider",
+            text: "Provider",
             base: "/packages/aa-alchemy/provider",
             collapsed: true,
             items: [
               {
-                text: "Overview of AlchemyProvider",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
-                text: "constructor for AlchemyProvider",
+                text: "constructor",
                 link: "/constructor",
+              },
+              {
+                text: "factory",
+                link: "/light-account-factory",
               },
               { text: "gasEstimator", link: "/gasEstimator" },
               {
+                text: "simulateUserOperationAssetChanges",
+                link: "/simulateUserOperationAssetChanges",
+              },
+              {
                 text: "withAlchemyGasManager",
                 link: "/withAlchemyGasManager",
+              },
+              {
+                text: "withAlchemyUserOpSimulation",
+                link: "/withAlchemyUserOpSimulation",
+              },
+              {
+                text: "withAlchemyEnhancedApis",
+                link: "/withAlchemyEnhancedApis",
               },
             ],
           },
@@ -486,7 +559,7 @@ export default defineConfig({
             collapsed: true,
             items: [
               {
-                text: "Overview of Middleware",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
@@ -497,6 +570,10 @@ export default defineConfig({
                 text: "withAlchemyGasManager",
                 link: "/withAlchemyGasManager",
               },
+              {
+                text: "withAlchemyUserOpSimulation",
+                link: "/withAlchemyUserOpSimulation",
+              },
             ],
           },
           {
@@ -505,7 +582,7 @@ export default defineConfig({
             base: "/packages/aa-alchemy/utils",
             items: [
               {
-                text: "Overview of Utils",
+                text: "Introduction",
                 link: "/introduction",
               },
               { text: "SupportedChains", link: "/supportedChains" },
@@ -519,21 +596,25 @@ export default defineConfig({
         base: "/packages/aa-accounts",
         items: [
           {
-            text: "Overview of aa-accounts",
+            text: "Getting Started",
             link: "/",
           },
           {
-            text: "LightSmartContractAccount",
+            text: "Light Account",
             collapsed: true,
             base: "/packages/aa-accounts/light-account",
             items: [
               {
-                text: "Overview of LightSmartContractAccount",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
-                text: "constructor for LightSmartContractAccount",
+                text: "constructor",
                 link: "/constructor",
+              },
+              {
+                text: "provider",
+                link: "/provider",
               },
               {
                 text: "signMessageWith6492",
@@ -553,7 +634,7 @@ export default defineConfig({
             ],
           },
           {
-            text: "Utilities",
+            text: "Utils",
             collapsed: true,
             base: "/packages/aa-accounts/utils",
             items: [
@@ -567,12 +648,52 @@ export default defineConfig({
         ],
       },
       {
+        text: "aa-signers",
+        collapsed: true,
+        base: "/packages/aa-signers",
+        items: [
+          {
+            text: "Getting Started",
+            link: "/",
+          },
+          {
+            text: "Magic Signer",
+            collapsed: true,
+            base: "/packages/aa-signers/magic",
+            items: [
+              { text: "Introduction", link: "/introduction" },
+              { text: "constructor", link: "/constructor" },
+              { text: "authenticate", link: "/authenticate" },
+              { text: "getAddress", link: "/getAddress" },
+              { text: "signMessage", link: "/signMessage" },
+              { text: "signTypedData", link: "/signTypedData" },
+              { text: "getAuthDetails", link: "/getAuthDetails" },
+            ],
+          },
+          {
+            text: "Web3Auth Signer",
+            collapsed: true,
+            base: "/packages/aa-signers/web3auth",
+            items: [
+              { text: "Introduction", link: "/introduction" },
+              { text: "constructor", link: "/constructor" },
+              { text: "authenticate", link: "/authenticate" },
+              { text: "getAddress", link: "/getAddress" },
+              { text: "signMessage", link: "/signMessage" },
+              { text: "signTypedData", link: "/signTypedData" },
+              { text: "getAuthDetails", link: "/getDgetAuthDetailsetails" },
+            ],
+          },
+          { text: "Contributing", link: "/contributing" },
+        ],
+      },
+      {
         text: "aa-ethers",
         base: "/packages/aa-ethers",
         collapsed: true,
         items: [
           {
-            text: "Overview of aa-ethers",
+            text: "Getting Started",
             link: "/",
           },
           {
@@ -581,11 +702,11 @@ export default defineConfig({
             base: "/packages/aa-ethers/provider-adapter",
             items: [
               {
-                text: "Overview of EthersProviderAdapter",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
-                text: "constructor for EthersProviderAdapter",
+                text: "constructor",
                 link: "/constructor",
               },
               {
@@ -612,7 +733,7 @@ export default defineConfig({
             base: "/packages/aa-ethers/account-signer",
             items: [
               {
-                text: "Overview of AccountSigner",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
@@ -643,7 +764,7 @@ export default defineConfig({
             base: "/packages/aa-ethers/utils",
             items: [
               {
-                text: "Overview of Utils",
+                text: "Introduction",
                 link: "/introduction",
               },
               {
@@ -653,6 +774,28 @@ export default defineConfig({
               {
                 text: "convertEthersSignerToAccountSigner",
                 link: "/convertEthersSignerToAccountSigner",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        text: "Glossary",
+        base: "/glossary",
+        items: [
+          {
+            text: "Types",
+            base: "/glossary/types",
+            collapsed: true,
+            items: [
+              { text: "BigNumberish", link: "/bigNumberish" },
+              {
+                text: "BigNumberishRange",
+                link: "/bigNumberishRange",
+              },
+              {
+                text: "Percentage",
+                link: "/percentage",
               },
             ],
           },

@@ -142,12 +142,24 @@ export abstract class BaseSmartContractAccount<
   /**
    * this should return the init code that will be used to create an account if one does not exist.
    * This is the concatenation of the account's factory address and the abi encoded function data of the account factory's `createAccount` method.
+   * https://github.com/eth-infinitism/account-abstraction/blob/abff2aca61a8f0934e533d0d352978055fddbd96/contracts/core/SenderCreator.sol#L12
    */
   protected abstract getAccountInitCode(): Promise<Hash>;
 
   // #endregion abstract-methods
 
   // #region optional-methods
+
+  /**
+   * If your account handles 1271 signatures of personal_sign differently
+   * than it does UserOperations, you can implement two different approaches to signing
+   *
+   * @param uoHash -- The hash of the UserOperation to sign
+   * @returns the signature of the UserOperation
+   */
+  async signUserOperationHash(uoHash: Hash): Promise<Hash> {
+    return this.signMessage(uoHash);
+  }
 
   /**
    * If your contract supports signing and verifying typed data,
@@ -220,6 +232,7 @@ export abstract class BaseSmartContractAccount<
     if (this.deploymentState === DeploymentState.DEPLOYED) {
       return "0x";
     }
+
     const contractCode = await this.rpcProvider.getBytecode({
       address: await this.getAddress(),
     });
@@ -237,19 +250,19 @@ export abstract class BaseSmartContractAccount<
   async getAddress(): Promise<Address> {
     if (!this.accountAddress) {
       const initCode = await this._getAccountInitCode();
-      Logger.debug(
+      Logger.verbose(
         "[BaseSmartContractAccount](getAddress) initCode: ",
         initCode
       );
       try {
         await this.entryPoint.simulate.getSenderAddress([initCode]);
       } catch (err: any) {
-        Logger.debug(
-          "[BaseSmartContractAccount](getAddress) entrypoint.getSenderAddress result: ",
-          err
-        );
         if (err.cause?.data?.errorName === "SenderAddressResult") {
           this.accountAddress = err.cause.data.args[0] as Address;
+          Logger.verbose(
+            "[BaseSmartContractAccount](getAddress) entrypoint.getSenderAddress result:",
+            this.accountAddress
+          );
           return this.accountAddress;
         }
       }
@@ -317,7 +330,7 @@ export abstract class BaseSmartContractAccount<
     const [factoryAddress, factoryCalldata] =
       await this.parseFactoryAddressFromAccountInitCode();
 
-    Logger.debug(
+    Logger.verbose(
       `[BaseSmartContractAccount](create6492Signature)\
         factoryAddress: ${factoryAddress}, factoryCalldata: ${factoryCalldata}`
     );

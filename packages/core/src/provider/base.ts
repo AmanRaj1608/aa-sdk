@@ -20,9 +20,12 @@ import type {
   PublicErc4337Client,
   SupportedTransports,
 } from "../client/types.js";
+import { Logger } from "../logger.js";
 import {
   type BatchUserOperationCallData,
+  type BigNumberish,
   type UserOperationCallData,
+  type UserOperationFeeOptions,
   type UserOperationOverrides,
   type UserOperationReceipt,
   type UserOperationRequest,
@@ -30,12 +33,15 @@ import {
   type UserOperationStruct,
 } from "../types.js";
 import {
+  applyUserOpOverrideOrFeeOption,
   asyncPipe,
   bigIntMax,
   bigIntPercent,
   deepHexlify,
   defineReadOnly,
+  filterUndefined,
   getDefaultEntryPointAddress,
+  getDefaultUserOperationFeeOptions,
   getUserOperationHash,
   isValidRequest,
   resolveProperties,
@@ -55,7 +61,9 @@ import type {
 } from "./types.js";
 
 export const noOpMiddleware: AccountMiddlewareFn = async (
-  struct: Deferrable<UserOperationStruct>
+  struct: Deferrable<UserOperationStruct>,
+  _overrides?: UserOperationOverrides,
+  _feeOptions?: UserOperationFeeOptions
 ) => struct;
 
 const minPriorityFeePerBidDefaults = new Map<number, bigint>([
@@ -73,8 +81,7 @@ export class SmartAccountProvider<
   private txMaxRetries: number;
   private txRetryIntervalMs: number;
   private txRetryMulitplier: number;
-
-  private minPriorityFeePerBid: bigint;
+  private feeOptions: UserOperationFeeOptions;
 
   readonly account?: ISmartContractAccount;
 
@@ -99,10 +106,10 @@ export class SmartAccountProvider<
     this.txRetryMulitplier = opts?.txRetryMulitplier ?? 1.5;
     this.entryPointAddress = entryPointAddress;
 
-    this.minPriorityFeePerBid =
-      opts?.minPriorityFeePerBid ??
-      minPriorityFeePerBidDefaults.get(chain.id) ??
-      100_000_000n;
+    this.feeOptions = {
+      ...getDefaultUserOperationFeeOptions(chain),
+      ...opts?.feeOptions,
+    };
 
     this.rpcClient =
       typeof rpcProvider === "string"
@@ -198,8 +205,11 @@ export class SmartAccountProvider<
     return this.account.signTypedDataWith6492(params);
   };
 
-  sendTransaction = async (request: RpcTransactionRequest): Promise<Hash> => {
-    const uoStruct = await this.buildUserOperationFromTx(request);
+  sendTransaction = async (
+    request: RpcTransactionRequest,
+    overrides?: UserOperationOverrides
+  ): Promise<Hash> => {
+    const uoStruct = await this.buildUserOperationFromTx(request, overrides);
 
     const { hash } = await this._sendUserOperation(uoStruct);
 
@@ -207,19 +217,28 @@ export class SmartAccountProvider<
   };
 
   buildUserOperationFromTx = async (
-    request: RpcTransactionRequest
+    request: RpcTransactionRequest,
+    overrides?: UserOperationOverrides
   ): Promise<UserOperationStruct> => {
     if (!request.to) {
       throw new Error("transaction is missing to address");
     }
 
-    const overrides: UserOperationOverrides = {};
-    if (request.maxFeePerGas) {
-      overrides.maxFeePerGas = request.maxFeePerGas;
-    }
-    if (request.maxPriorityFeePerGas) {
-      overrides.maxPriorityFeePerGas = request.maxPriorityFeePerGas;
-    }
+    const _overrides: UserOperationOverrides = {
+      maxFeePerGas:
+        overrides?.maxFeePerGas != null
+          ? overrides?.maxFeePerGas
+          : request.maxFeePerGas
+          ? fromHex(request.maxFeePerGas, "bigint")
+          : undefined,
+      maxPriorityFeePerGas:
+        overrides?.maxPriorityFeePerGas != null
+          ? overrides?.maxPriorityFeePerGas
+          : request.maxPriorityFeePerGas
+          ? fromHex(request.maxPriorityFeePerGas, "bigint")
+          : undefined,
+    };
+    filterUndefined(_overrides);
 
     return this.buildUserOperation(
       {
@@ -227,11 +246,14 @@ export class SmartAccountProvider<
         data: request.data ?? "0x",
         value: request.value ? fromHex(request.value, "bigint") : 0n,
       },
-      overrides
+      _overrides
     );
   };
 
-  sendTransactions = async (requests: RpcTransactionRequest[]) => {
+  buildUserOperationFromTxs = (
+    requests: RpcTransactionRequest[],
+    overrides?: UserOperationOverrides
+  ) => {
     const batch = requests.map((request) => {
       if (!request.to) {
         throw new Error(
@@ -246,27 +268,45 @@ export class SmartAccountProvider<
       };
     });
 
-    const maxFeePerGas = bigIntMax(
-      ...requests
-        .filter((x) => x.maxFeePerGas != null)
-        .map((x) => fromHex(x.maxFeePerGas!, "bigint"))
+    const maxFeePerGas =
+      overrides?.maxFeePerGas != null
+        ? overrides?.maxFeePerGas
+        : bigIntMax(
+            ...requests
+              .filter((x) => x.maxFeePerGas != null)
+              .map((x) => fromHex(x.maxFeePerGas!, "bigint"))
+          );
+    const maxPriorityFeePerGas =
+      overrides?.maxPriorityFeePerGas != null
+        ? overrides?.maxPriorityFeePerGas
+        : bigIntMax(
+            ...requests
+              .filter((x) => x.maxPriorityFeePerGas != null)
+              .map((x) => fromHex(x.maxPriorityFeePerGas!, "bigint"))
+          );
+
+    const _overrides: UserOperationOverrides = {
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+    };
+    filterUndefined(_overrides);
+
+    return {
+      batch,
+      overrides,
+    };
+  };
+
+  sendTransactions = async (
+    requests: RpcTransactionRequest[],
+    overrides?: UserOperationOverrides
+  ) => {
+    const { batch, overrides: _overrides } = this.buildUserOperationFromTxs(
+      requests,
+      overrides
     );
 
-    const maxPriorityFeePerGas = bigIntMax(
-      ...requests
-        .filter((x) => x.maxPriorityFeePerGas != null)
-        .map((x) => fromHex(x.maxPriorityFeePerGas!, "bigint"))
-    );
-    const overrides: UserOperationOverrides = {};
-    if (maxFeePerGas != null) {
-      overrides.maxFeePerGas = maxFeePerGas;
-    }
-
-    if (maxPriorityFeePerGas != null) {
-      overrides.maxPriorityFeePerGas = maxPriorityFeePerGas;
-    }
-
-    const { hash } = await this.sendUserOperation(batch, overrides);
+    const { hash } = await this.sendUserOperation(batch, _overrides);
 
     return await this.waitForUserOperationTransaction(hash as Hash);
   };
@@ -280,9 +320,13 @@ export class SmartAccountProvider<
       await new Promise((resolve) =>
         setTimeout(resolve, txRetryIntervalWithJitterMs)
       );
-      const receipt = await this.getUserOperationReceipt(hash as `0x${string}`)
-        // TODO: should maybe log the error?
-        .catch(() => null);
+      const receipt = await this.getUserOperationReceipt(
+        hash as `0x${string}`
+      ).catch((e) => {
+        Logger.error(
+          `[SmartAccountProvider] waitForUserOperationTransaction error fetching receipt for ${hash}: ${e}`
+        );
+      });
       if (receipt) {
         return this.getTransaction(receipt.receipt.transactionHash).then(
           (x) => x.hash
@@ -325,6 +369,8 @@ export class SmartAccountProvider<
         nonce: this.account.getNonce(),
         callData: Array.isArray(data)
           ? this.account.encodeBatchExecute(data)
+          : typeof data === "string"
+          ? data
           : this.account.encodeExecute(
               data.target,
               data.value ?? 0n,
@@ -349,7 +395,8 @@ export class SmartAccountProvider<
   };
 
   dropAndReplaceUserOperation = async (
-    uoToDrop: UserOperationRequest
+    uoToDrop: UserOperationRequest,
+    overrides?: UserOperationOverrides
   ): Promise<SendUserOperationResult> => {
     const uoToSubmit = {
       initCode: uoToDrop.initCode,
@@ -362,9 +409,9 @@ export class SmartAccountProvider<
     // Run once to get the fee estimates
     // This can happen at any part of the middleware stack, so we want to run it all
     const { maxFeePerGas, maxPriorityFeePerGas } =
-      await this._runMiddlewareStack(uoToSubmit);
+      await this._runMiddlewareStack(uoToSubmit, overrides);
 
-    const overrides: UserOperationOverrides = {
+    const _overrides: UserOperationOverrides = {
       maxFeePerGas: bigIntMax(
         BigInt(maxFeePerGas ?? 0n),
         bigIntPercent(uoToDrop.maxFeePerGas, 110n)
@@ -373,10 +420,24 @@ export class SmartAccountProvider<
         BigInt(maxPriorityFeePerGas ?? 0n),
         bigIntPercent(uoToDrop.maxPriorityFeePerGas, 110n)
       ),
+      paymasterAndData: uoToDrop.paymasterAndData,
     };
 
-    const uoToSend = await this._runMiddlewareStack(uoToSubmit, overrides);
+    const uoToSend = await this._runMiddlewareStack(uoToSubmit, _overrides);
     return this._sendUserOperation(uoToSend);
+  };
+
+  checkGasSponsorshipEligibility = async (
+    data: UserOperationCallData | BatchUserOperationCallData,
+    overrides?: UserOperationOverrides
+  ): Promise<boolean> => {
+    return this.buildUserOperation(data, overrides)
+      .then(
+        (userOperationStruct: UserOperationStruct) =>
+          userOperationStruct.paymasterAndData !== "0x" &&
+          userOperationStruct.paymasterAndData !== null
+      )
+      .catch(() => false);
   };
 
   private _runMiddlewareStack = async (
@@ -387,11 +448,12 @@ export class SmartAccountProvider<
       this.dummyPaymasterDataMiddleware,
       this.feeDataGetter,
       this.gasEstimator,
-      // run this before paymaster middleware
-      async (struct) => ({ ...struct, ...overrides }),
       this.customMiddleware ?? noOpMiddleware,
-      this.paymasterDataMiddleware
-    )(uo);
+      overrides?.paymasterAndData != null
+        ? this.overridePaymasterDataMiddleware
+        : this.paymasterDataMiddleware,
+      this.simulateUOMiddleware
+    )(uo, overrides, this.feeOptions);
 
     return resolveProperties<UserOperationStruct>(result);
   };
@@ -413,7 +475,7 @@ export class SmartAccountProvider<
       );
     }
 
-    request.signature = (await this.account.signMessage(
+    request.signature = (await this.account.signUserOperationHash(
       getUserOperationHash(
         request,
         this.getEntryPointAddress(),
@@ -434,28 +496,63 @@ export class SmartAccountProvider<
   // You should implement your own middleware to override these
   // or extend this class and provider your own implemenation
   readonly dummyPaymasterDataMiddleware: AccountMiddlewareFn = async (
-    struct
+    struct,
+    _overrides,
+    _feeOptions
   ) => {
     struct.paymasterAndData = "0x";
     return struct;
   };
 
-  readonly paymasterDataMiddleware: AccountMiddlewareFn = async (struct) => {
+  readonly overridePaymasterDataMiddleware: AccountMiddlewareFn = async (
+    struct,
+    overrides,
+    _feeOptions
+  ) => {
+    struct.paymasterAndData =
+      overrides?.paymasterAndData != null ? overrides?.paymasterAndData : "0x";
+    return struct;
+  };
+
+  readonly paymasterDataMiddleware: AccountMiddlewareFn = async (
+    struct,
+    _overrides,
+    _feeOptions
+  ) => {
     struct.paymasterAndData = "0x";
     return struct;
   };
 
-  readonly gasEstimator: AccountMiddlewareFn = async (struct) => {
+  readonly gasEstimator: AccountMiddlewareFn = async (
+    struct,
+    overrides,
+    feeOptions
+  ) => {
     const request = deepHexlify(await resolveProperties(struct));
     const estimates = await this.rpcClient.estimateUserOperationGas(
       request,
       this.getEntryPointAddress()
     );
 
-    struct.callGasLimit = estimates.callGasLimit;
-    struct.verificationGasLimit = estimates.verificationGasLimit;
-    struct.preVerificationGas = estimates.preVerificationGas;
+    const callGasLimit = applyUserOpOverrideOrFeeOption(
+      estimates.callGasLimit,
+      overrides?.callGasLimit,
+      feeOptions?.callGasLimit
+    );
+    const verificationGasLimit = applyUserOpOverrideOrFeeOption(
+      estimates.verificationGasLimit,
+      overrides?.verificationGasLimit,
+      feeOptions?.verificationGasLimit
+    );
+    const preVerificationGas = applyUserOpOverrideOrFeeOption(
+      estimates.preVerificationGas,
+      overrides?.preVerificationGas,
+      feeOptions?.preVerificationGas
+    );
 
+    struct.callGasLimit = callGasLimit;
+    struct.verificationGasLimit = verificationGasLimit;
+    struct.preVerificationGas = preVerificationGas;
     return struct;
   };
 
@@ -477,18 +574,25 @@ export class SmartAccountProvider<
       this.minPriorityFeePerBid
     );
 
-    const maxFeePerGasBid =
-      BigInt(feeData.maxFeePerGas) -
-      BigInt(feeData.maxPriorityFeePerGas) +
-      maxPriorityFeePerGasBid;
+    let maxFeePerGas: BigNumberish =
+      feeData.maxFeePerGas -
+      feeData.maxPriorityFeePerGas +
+      BigInt(maxPriorityFeePerGas);
 
-    struct.maxFeePerGas = maxFeePerGasBid;
-    struct.maxPriorityFeePerGas = maxPriorityFeePerGasBid;
+    maxFeePerGas = applyUserOpOverrideOrFeeOption(
+      maxFeePerGas,
+      overrides?.maxFeePerGas,
+      feeOptions?.maxFeePerGas
+    );
 
+    struct.maxFeePerGas = maxFeePerGas;
+    struct.maxPriorityFeePerGas = maxPriorityFeePerGas;
     return struct;
   };
 
-  readonly customMiddleware?: AccountMiddlewareFn | undefined = undefined;
+  readonly customMiddleware: AccountMiddlewareFn = noOpMiddleware;
+
+  readonly simulateUOMiddleware: AccountMiddlewareFn = noOpMiddleware;
 
   withPaymasterMiddleware = (overrides: {
     dummyPaymasterDataMiddleware?: PaymasterAndDataMiddleware;
@@ -527,6 +631,12 @@ export class SmartAccountProvider<
 
   withCustomMiddleware = (override: AccountMiddlewareFn): this => {
     defineReadOnly(this, "customMiddleware", override);
+
+    return this;
+  };
+
+  withSimulateUOMiddleware = (override: AccountMiddlewareFn): this => {
+    defineReadOnly(this, "simulateUOMiddleware", override);
 
     return this;
   };
@@ -628,10 +738,10 @@ export class SmartAccountProvider<
   private overrideMiddlewareFunction = (
     override: AccountMiddlewareOverrideFn
   ): AccountMiddlewareFn => {
-    return async (struct) => {
+    return async (struct, overrides) => {
       return {
         ...struct,
-        ...(await override(struct)),
+        ...(await override(struct, overrides)),
       };
     };
   };

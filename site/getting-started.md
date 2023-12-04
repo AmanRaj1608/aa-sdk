@@ -6,16 +6,16 @@ head:
       content: Getting Started Guide
   - - meta
     - name: description
-      content: Learn how to get started with Alchemy's Account Kit, a vertically integrated stack for building apps that support ERC-4337.
+      content: Learn how to get started with Account Kit, a vertically integrated stack for building apps that support ERC-4337.
   - - meta
     - property: og:description
-      content: Learn how to get started with Alchemy's Account Kit, a vertically integrated stack for building apps that support ERC-4337.
+      content: Learn how to get started with Account Kit, a vertically integrated stack for building apps that support ERC-4337.
   - - meta
     - name: twitter:title
       content: Getting Started Guide
   - - meta
     - name: twitter:description
-      content: Learn how to get started with Alchemy's Account Kit, a vertically integrated stack for building apps that support ERC-4337.
+      content: Learn how to get started with Account Kit, a vertically integrated stack for building apps that support ERC-4337.
 ---
 
 # Getting Started
@@ -60,7 +60,7 @@ Remember to:
 
 ## Dive Deeper
 
-In this guide we initialized `provider` with the `aa-alchemy` package however we could have done the same with the other packages of Account Kit as well. To learn more about the different packages and their use cases, check out the ["Packages Overview"](/package-overview) page.
+In this guide we initialized `provider` with the `aa-alchemy` package however we could have done the same with the other packages of Account Kit as well. To learn more about the different packages and their use cases, check out the ["Packages Overview"](/overview/package-overview) page.
 
 ## Next Steps
 

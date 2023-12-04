@@ -10,6 +10,8 @@ head:
   - - meta
     - property: og:description
       content: Overview of the Public Client exported by aa-core
+next:
+  text: Actions
 ---
 
 # Public ERC-4337 Client
@@ -42,7 +44,7 @@ Sends a user operation to the RPC provider and returns gas estimates for the Use
 
 #### Returns
 
-- `UserOperationEstimateGasResponse` - gas estimates for the UserOperation.
+- `UserOperationEstimateGasResponse` - gas estimates for the `UserOperation` (UO).
 
 ### `eth_getUserOperationReceipt`
 
@@ -66,7 +68,7 @@ Given a User Operation hash, returns the User Operation.
 
 #### Returns
 
-- `UserOperationResponse | null` - The UserOperation if it exists or null if it does not.
+- `UserOperationResponse | null` - The UO if it exists or null if it does not.
 
 ### `eth_supportedEntryPoints`
 

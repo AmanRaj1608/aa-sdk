@@ -1,30 +1,60 @@
 import type { Address, Hash } from "viem";
+import type { z } from "zod";
+import type {
+  UserOperationFeeOptionsFieldSchema,
+  UserOperationFeeOptionsSchema,
+} from "./provider/schema";
+import type {
+  BigNumberishRangeSchema,
+  BigNumberishSchema,
+  HexSchema,
+  PercentageSchema,
+} from "./utils";
 
-export type Hex = `0x${string}`;
+export type Hex = z.infer<typeof HexSchema>;
 export type EmptyHex = `0x`;
 
 // based on @account-abstraction/common
 export type PromiseOrValue<T> = T | Promise<T>;
-export type BigNumberish = string | bigint | number;
-export type BytesLike = Uint8Array | string;
+export type BytesLike = Uint8Array | Hex;
+export type Percentage = z.infer<typeof PercentageSchema>;
 
-export interface UserOperationCallData {
-  /* the target of the call */
-  target: Address;
-  /* the data passed to the target */
-  data: Hex;
-  /* the amount of native token to send to the target (default: 0) */
-  value?: bigint;
-}
+export type BigNumberish = z.infer<typeof BigNumberishSchema>;
+export type BigNumberishRange = z.infer<typeof BigNumberishRangeSchema>;
 
-export type BatchUserOperationCallData = UserOperationCallData[];
+export type UserOperationCallData =
+  | {
+      /* the target of the call */
+      target: Address;
+      /* the data passed to the target */
+      data: Hex;
+      /* the amount of native token to send to the target (default: 0) */
+      value?: bigint;
+    }
+  | Hex;
 
-export type UserOperationOverrides = Partial<
-  Pick<
-    UserOperationStruct,
-    "maxFeePerGas" | "maxPriorityFeePerGas" | "paymasterAndData"
-  >
+export type BatchUserOperationCallData = Exclude<UserOperationCallData, Hex>[];
+
+export type UserOperationFeeOptionsField = z.infer<
+  typeof UserOperationFeeOptionsFieldSchema
 >;
+
+export type UserOperationFeeOptions = z.infer<
+  typeof UserOperationFeeOptionsSchema
+>;
+
+export type UserOperationOverrides = Partial<{
+  callGasLimit: UserOperationStruct["callGasLimit"] | Percentage;
+  maxFeePerGas: UserOperationStruct["maxFeePerGas"] | Percentage;
+  maxPriorityFeePerGas:
+    | UserOperationStruct["maxPriorityFeePerGas"]
+    | Percentage;
+  preVerificationGas: UserOperationStruct["preVerificationGas"] | Percentage;
+  verificationGasLimit:
+    | UserOperationStruct["verificationGasLimit"]
+    | Percentage;
+  paymasterAndData: UserOperationStruct["paymasterAndData"];
+}>;
 
 // represents the request as it needs to be formatted for RPC requests
 export interface UserOperationRequest {

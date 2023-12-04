@@ -2,12 +2,15 @@ import type { Address, Chain } from "viem";
 import {
   arbitrum,
   arbitrumGoerli,
+  arbitrumSepolia,
   base,
   baseGoerli,
+  baseSepolia,
   goerli,
   mainnet,
   optimism,
   optimismGoerli,
+  optimismSepolia,
   polygon,
   polygonMumbai,
   sepolia,
@@ -29,11 +32,14 @@ export const getDefaultLightAccountFactoryAddress = (chain: Chain): Address => {
     case polygonMumbai.id:
     case optimism.id:
     case optimismGoerli.id:
+    case optimismSepolia.id:
     case arbitrum.id:
     case arbitrumGoerli.id:
+    case arbitrumSepolia.id:
     case base.id:
     case baseGoerli.id:
-      return "0x000000893A26168158fbeaDD9335Be5bC96592E2";
+    case baseSepolia.id:
+      return "0x00000055C0b4fA41dde26A74435ff03692292FBD";
   }
   throw new Error(
     `no default light account factory contract exists for ${chain.name}`

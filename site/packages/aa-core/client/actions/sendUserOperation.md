@@ -10,11 +10,13 @@ head:
   - - meta
     - property: og:description
       content: Overview of the sendUserOperation action available on the PublicErc4337Client
+prev:
+  text: Public ERC-4337 Client
 ---
 
 # sendUserOperation
 
-Calls `eth_sendUserOperation` and returns the hash of the sent UserOperation.
+Calls `eth_sendUserOperation` and returns the hash of the sent `UserOperation` (UO).
 
 ## Usage
 
@@ -38,7 +40,7 @@ const hash = await client.sendUserOperation(
 
 ### `Promise<Hash>`
 
-the hash of the sent UserOperation
+the hash of the sent UO
 
 ## Parameters
 

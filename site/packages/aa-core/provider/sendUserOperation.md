@@ -65,8 +65,14 @@ A Promise containing the hash of the user operation and the request that was sen
 
 ## Parameters
 
-### `UserOperationCallData | UserOperationCallData[]`
+### `UserOperationCallData | UserOperationCallData[] | Hex`
+
+`UserOperationCallData` is an object with the following properties:
 
 - `target: Address` - the target of the call (equivalent to `to` in a transaction)
 - `data: Hex` - can be either `0x` or a call data string
 - `value?: bigint` - optionally, set the value in wei you want to send to the target
+
+### `overrides?:` [`UserOperationOverrides`](/packages/aa-core/types/userOperationOverrides.md)
+
+Optional parameter where you can specify override values for `maxFeePerGas`, `maxPriorityFeePerGas`, `callGasLimit`, `preVerificationGas`, `verificationGasLimit` or `paymasterAndData` on the user operation request

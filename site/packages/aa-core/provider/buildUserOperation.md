@@ -14,7 +14,7 @@ head:
 
 # buildUserOperation
 
-Builds an _unsigned_ UserOperation struct with the all of the middleware run on it through the middleware pipeline.
+Builds an _unsigned_ `UserOperation` (UO) struct with the all of the middleware run on it through the middleware pipeline.
 
 The order of the middlewares is:
 
@@ -65,7 +65,7 @@ const { hash: batchedUoHash } = await provider.sendUserOperation(
 
 ### `Promise<UserOperationStruct>`
 
-A Promise containing the _unsigned_ UserOperation struct resulting from the middleware pipeline
+A Promise containing the _unsigned_ UO struct resulting from the middleware pipeline
 
 ## Parameters
 
@@ -74,3 +74,7 @@ A Promise containing the _unsigned_ UserOperation struct resulting from the midd
 - `target: Address` - the target of the call (equivalent to `to` in a transaction)
 - `data: Hex` - can be either `0x` or a call data string
 - `value?: bigint` - optionally, set the value in wei you want to send to the target
+
+### `overrides?:` [`UserOperationOverrides`](/packages/aa-core/types/userOperationOverrides.md)
+
+Optional parameter where you can specify override values for `maxFeePerGas`, `maxPriorityFeePerGas`, `callGasLimit`, `preVerificationGas`, `verificationGasLimit` or `paymasterAndData` on the user operation request
