@@ -58,10 +58,10 @@
   "homepage": "https://github.com/alchemyplatform/aa-sdk#readme",
   "gitHead": "ee46e8bb857de3b631044fa70714ea706d9e317d",
   "dependencies": {
-    "@biconomy/bundler": "npm:@biconomy-devx/bundler@2.0.37",
-    "@biconomy/common": "npm:@biconomy-devx/common@2.0.37",
-    "@biconomy/modules": "npm:@biconomy-devx/modules@2.0.37",
-    "@biconomy/paymaster": "npm:@biconomy-devx/paymaster@2.0.37",
+    "@biconomy/bundler": "npm:@biconomy-devx/bundler@2.0.49",
+    "@biconomy/common": "npm:@biconomy-devx/common@2.0.49",
+    "@biconomy/modules": "npm:@biconomy-devx/modules@2.0.49",
+    "@biconomy/paymaster": "npm:@biconomy-devx/paymaster@2.0.49",
     "@alchemy/aa-core": "^1.2.0",
     "viem": "^1.16.2"
   }

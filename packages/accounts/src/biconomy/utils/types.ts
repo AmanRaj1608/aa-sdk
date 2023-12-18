@@ -1,5 +1,5 @@
 import { Signer } from "ethers";
-import { type BigNumberish } from "@alchemy/aa-core";
+import { type BigNumberish, type UserOperationStruct } from "@alchemy/aa-core";
 import type { IBundler } from "@biconomy/bundler";
 import type {
   IPaymaster,
@@ -8,31 +8,10 @@ import type {
 } from "@biconomy/paymaster";
 import { BaseValidationModule, type ModuleInfo } from "@biconomy/modules";
 import { Provider } from "@ethersproject/providers";
-import { type GasOverheads } from "./preverification.js";
 import { type Hex } from "viem";
 
 export type EntryPointAddresses = {
   [address: string]: string;
-};
-
-export type Transaction = {
-  to: string;
-  value?: BigNumberish;
-  data?: string;
-};
-export type EmptyHex = `0x`;
-export type UserOperation = {
-  sender: Hex;
-  nonce: Hex;
-  initCode: Hex | EmptyHex;
-  callData: Hex;
-  callGasLimit: Hex;
-  verificationGasLimit: Hex;
-  preVerificationGas: Hex;
-  maxFeePerGas: Hex;
-  maxPriorityFeePerGas: Hex;
-  paymasterAndData: Hex | EmptyHex;
-  signature: Hex;
 };
 
 export type BiconomyFactories = {
@@ -60,17 +39,39 @@ export type SmartAccountConfig = {
   bundler?: IBundler;
 };
 
-export interface BaseSmartAccountConfig {
+export interface GasOverheads {
+  fixed: number;
+  perUserOp: number;
+  perUserOpWord: number;
+  zeroByte: number;
+  nonZeroByte: number;
+  bundleSize: number;
+  sigSize: number;
+}
+
+/**
+ * Enum representing available validation modules.
+ *
+ * - `ECDSA_OWNERSHIP`: Default module for ECDSA ownership validation.
+ * - `MULTICHAIN`: Default module for multi-chain validation.
+ * -  If you don't provide any module, ECDSA_OWNERSHIP will be used as default
+ */
+/*export enum AuthorizationModuleType {
+  ECDSA_OWNERSHIP = DEFAULT_ECDSA_OWNERSHIP_MODULE,
+  // MULTICHAIN = DEFAULT_MULTICHAIN_MODULE,
+}*/
+
+export type BaseSmartAccountConfig = {
   // owner?: Signer // can be in child classes
   index?: number;
   provider?: Provider;
-  entryPointAddress: string;
+  entryPointAddress?: string;
   accountAddress?: string;
   overheads?: Partial<GasOverheads>;
   paymaster?: IPaymaster; // PaymasterAPI
   bundler?: IBundler; // like HttpRpcClient
   chainId: number;
-}
+};
 
 export type BiconomyTokenPaymasterRequest = {
   feeQuote: PaymasterFeeQuote;
@@ -88,15 +89,35 @@ export type BiconomySmartAccountConfig = {
   nodeClientUrl?: string;
 };
 
-export interface BiconomySmartAccountV2Config extends BaseSmartAccountConfig {
-  factoryAddress?: Hex;
-  implementationAddress?: Hex;
-  defaultFallbackHandler?: Hex;
-  rpcUrl?: string; // as good as Provider
-  nodeClientUrl?: string; // very specific to Biconomy
-  defaultValidationModule: BaseValidationModule;
-  activeValidationModule?: BaseValidationModule;
-}
+type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
+  T,
+  Exclude<keyof T, Keys>
+> &
+  {
+    [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
+  }[Keys];
+
+type ConditionalValidationProps = RequireAtLeastOne<
+  {
+    defaultValidationModule: BaseValidationModule;
+    signer: Signer;
+  },
+  "defaultValidationModule" | "signer"
+>;
+
+export type BiconomySmartAccountV2Config = BaseSmartAccountConfig &
+  ConditionalValidationProps & {
+    factoryAddress?: Hex;
+    senderAddress?: Hex;
+    implementationAddress?: Hex;
+    defaultFallbackHandler?: Hex;
+    rpcUrl?: string; // as good as Provider
+    nodeClientUrl?: string; // very specific to Biconomy
+    biconomyPaymasterApiKey?: string;
+    activeValidationModule?: BaseValidationModule;
+    scanForUpgradedAccountsFromV1?: boolean;
+    maxIndexForScan?: number;
+  };
 
 export type BuildUserOpOptions = {
   overrides?: Overrides;
@@ -144,6 +165,13 @@ export type InitializeV2Data = {
   accountIndex?: number;
 };
 
+export type EstimateUserOpGasParams = {
+  userOp: Partial<UserOperationStruct>;
+  overrides?: Overrides;
+  skipBundlerGasEstimation?: boolean;
+  paymasterServiceData?: SponsorUserOperationDto;
+};
+
 export interface TransactionDetailsForUserOp {
   target: string;
   data: string;
@@ -157,4 +185,29 @@ export interface TransactionDetailsForUserOp {
 export type CounterFactualAddressParam = {
   index?: number;
   validationModule?: BaseValidationModule;
+  scanForUpgradedAccountsFromV1?: boolean;
+  maxIndexForScan?: number;
+};
+
+export type QueryParamsForAddressResolver = {
+  eoaAddress: Hex;
+  index: number;
+  moduleAddress: Hex;
+  moduleSetupData: Hex;
+  maxIndexForScan?: number;
+};
+
+export type SmartAccountInfo = {
+  accountAddress: Hex;
+  factoryAddress: Hex;
+  currentImplementation: string;
+  currentVersion: string;
+  factoryVersion: string;
+  deploymentIndex: BigNumberish;
+};
+
+export type Transaction = {
+  to: string;
+  value: BigNumberish;
+  data: string;
 };
